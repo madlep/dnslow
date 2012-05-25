@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+set -e
+
+SLOW_DOWN=100
+SET=1
+RULE=1337
+PIPE=123
+
+enable() {
+  echo "enabling slow DNS lookups (${SLOW_DOWN}ms delay)"
+  sudo ipfw add $RULE set $SET pipe 123 ip from any domain to any 1> /dev/null
+  sudo ipfw pipe $PIPE config delay $SLOW_DOWN 1> /dev/null
+  sudo dscacheutil -flushcache
+  status
+}
+
+disable() {
+  echo "disabling slow DNS lookups"
+  sudo ipfw delete set $SET
+  sudo ipfw pipe delete $PIPE
+  sudo dscacheutil -flushcache
+  status
+}
+
+status() {
+  echo "ipfw list"
+  sudo ipfw list
+  echo ""
+  echo "ipfw pipe show $PIPE"
+  sudo ipfw pipe show $PIPE
+  echo ""
+}
+
+case "$1" in
+  enable)
+    enable
+    ;;
+  disable)
+    disable
+    ;;
+  status)
+    status
+    ;;
+  *)
+    echo "*** usage dnslow [enable|disable|status]"
+    exit 1
+esac
+
